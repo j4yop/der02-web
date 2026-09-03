@@ -45,7 +45,7 @@ export interface ZoneMapProps {
   strengthClass: number;
 }
 
-const SEVERITY_OPACITY = 0.35;
+const SEVERITY_OPACITY = 0.25; // polygons are large; lower opacity keeps the basemap readable.
 const BBOX_PADDING = 0.001; // degrees
 
 /** Compute map center as the centroid of the bbox. */
