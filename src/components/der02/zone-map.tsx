@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import {
   AttributionControl,
+  LayerGroup,
   MapContainer,
   Marker,
   Popup,
   TileLayer,
+  useMap,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -54,33 +56,47 @@ function bboxCenter(bbox: ZoneMapProps["bbox"]): [number, number] {
   ];
 }
 
-export function ZoneMap({ records, bbox, sourceLabel, strengthClass }: ZoneMapProps) {
-  // Use refs to access the Leaflet map instance imperatively.
-  const mapRef = useRef<L.Map | null>(null);
-  const layerGroupRef = useRef<L.LayerGroup | null>(null);
+/** A child of <MapContainer> that draws the current zone records into
+ *  a <LayerGroup>. Drawing happens in a useLayoutEffect so the polygons
+ *  appear before the browser paints. */
+function ZoneLayer({ records }: { records: ZoneRecord[] }) {
+  const [group, setGroup] = useState<L.LayerGroup | null>(null);
 
-  // Fit map to bbox whenever it changes.
-  useEffect(() => {
-    if (!mapRef.current) return;
-    const m = mapRef.current;
-    m.fitBounds([
-      [bbox.min_lat - BBOX_PADDING, bbox.min_lon - BBOX_PADDING],
-      [bbox.max_lat + BBOX_PADDING, bbox.max_lon + BBOX_PADDING],
-    ]);
-  }, [bbox.min_lat, bbox.min_lon, bbox.max_lat, bbox.max_lon]);
+  // Capture the Leaflet LayerGroup instance once the LayerGroup
+  // component mounts. <LayerGroup> from react-leaflet creates and
+  // attaches the L.LayerGroup for us — we just need to grab the ref.
+  return (
+    <LayerGroup
+      ref={(g) => {
+        if (g && g !== group) setGroup(g);
+      }}
+    >
+      {group && <ZonePolygons group={group} records={records} />}
+    </LayerGroup>
+  );
+}
 
-  // Clear & re-render zones whenever the records change.
-  useEffect(() => {
-    const lg = layerGroupRef.current;
-    if (!lg) return;
-    lg.clearLayers();
-
+/** Draws zones into the given layer group. Mounted as a child of
+ *  ZoneLayer only after the layer group is ready, so group is
+ *  guaranteed non-null inside the drawing effect. */
+function ZonePolygons({
+  group,
+  records,
+}: {
+  group: L.LayerGroup;
+  records: ZoneRecord[];
+}) {
+  // Re-draw zones on every change. The layer group is mutated in
+  // place; we just clear and re-add. useLayoutEffect ensures the
+  // browser doesn't paint a flash of the previous zones.
+  useLayoutEffect(() => {
+    group.clearLayers();
     const groups = groupBySeverity(records);
     for (const [sev, pts] of Object.entries(groups)) {
       if (pts.length === 0) continue;
       const color = SEVERITY_COLOURS[sev] ?? "#999";
       if (pts.length < 3) {
-        // Render as a circle marker (lethal band typically has 1-2 points).
+        // Lethal band typically has 1-2 points — render as a circle.
         const [cLat, cLon] = centroid(pts);
         let maxR = 20;
         for (const p of pts) {
@@ -97,7 +113,7 @@ export function ZoneMap({ records, bbox, sourceLabel, strengthClass }: ZoneMapPr
           .bindPopup(
             `<b>${sev[0]!.toUpperCase()}${sev.slice(1)}</b> band (${pts.length} grid node${pts.length === 1 ? "" : "s"})`,
           )
-          .addTo(lg);
+          .addTo(group);
       } else {
         const hull = convexHull(pts.map((p) => [p.lat, p.lon] as [number, number]));
         if (hull.length < 3) continue;
@@ -110,38 +126,46 @@ export function ZoneMap({ records, bbox, sourceLabel, strengthClass }: ZoneMapPr
           .bindPopup(
             `<b>${sev[0]!.toUpperCase()}${sev.slice(1)}</b> band (${pts.length} grid nodes)`,
           )
-          .addTo(lg);
+          .addTo(group);
       }
     }
-  }, [records]);
+  }, [group, records]);
 
+  return null;
+}
+
+/** Fit the map view to the current bbox. Called on every bbox change
+ *  via a dedicated effect inside <MapContainer>. */
+function FitToBbox({ bbox }: { bbox: ZoneMapProps["bbox"] }) {
+  const map = useMap();
+  useEffect(() => {
+    map.fitBounds([
+      [bbox.min_lat - BBOX_PADDING, bbox.min_lon - BBOX_PADDING],
+      [bbox.max_lat + BBOX_PADDING, bbox.max_lon + BBOX_PADDING],
+    ]);
+  }, [map, bbox.min_lat, bbox.min_lon, bbox.max_lat, bbox.max_lon]);
+  return null;
+}
+
+export function ZoneMap(props: ZoneMapProps) {
   return (
     <MapContainer
-      center={bboxCenter(bbox)}
+      center={bboxCenter(props.bbox)}
       zoom={14}
       style={{ height: "100%", width: "100%" }}
-      ref={(m) => {
-        mapRef.current = m;
-      }}
-      whenReady={() => {
-        // Once the map is created, attach the layer group used for zones.
-        if (mapRef.current && !layerGroupRef.current) {
-          layerGroupRef.current = L.layerGroup().addTo(mapRef.current);
-        }
-      }}
     >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
       <AttributionControl
         position="bottomright"
         prefix='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
-      <Marker position={bboxCenter(bbox)} icon={TANK_ICON}>
+      <FitToBbox bbox={props.bbox} />
+      <ZoneLayer records={props.records} />
+      <Marker position={bboxCenter(props.bbox)} icon={TANK_ICON}>
         <Popup>
-          <b>{sourceLabel}</b>
+          <b>{props.sourceLabel}</b>
           <br />
-          Strength class {strengthClass}
+          Strength class {props.strengthClass}
         </Popup>
       </Marker>
     </MapContainer>
