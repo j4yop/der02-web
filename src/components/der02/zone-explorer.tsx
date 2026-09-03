@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Separator } from "@/components/ui/separator";
 import { api, Der02ApiError } from "@/lib/api";
 import type {
   Fuel,
@@ -40,6 +39,24 @@ const DEFAULT_WIND_FROM = 180;
 const DEFAULT_STRENGTH_CLASS = 7;
 const DEFAULT_VOLUME = 1000;
 const DEFAULT_TANK_DIAMETER = 10;
+
+/** Default form values for the Reset button. Keep in sync with the
+ *  initial-state hooks below. */
+const DEFAULTS = {
+  fuel: "propane",
+  volume: DEFAULT_VOLUME,
+  windSpeed: DEFAULT_WIND_SPEED,
+  windFrom: DEFAULT_WIND_FROM,
+  lat: DEFAULT_LAT,
+  lon: DEFAULT_LON,
+  resolution: DEFAULT_RESOLUTION,
+  strengthClass: DEFAULT_STRENGTH_CLASS,
+  combEff: DEFAULT_COMB_EFF,
+  transmissivity: DEFAULT_TRANSMISSIVITY,
+  tankDiameter: DEFAULT_TANK_DIAMETER,
+  tankHeight: DEFAULT_TANK_DIAMETER,
+  overrideTank: false,
+} as const;
 
 interface NumericBand {
   severity: "lethal" | "danger" | "caution";
@@ -77,6 +94,22 @@ export function ZoneExplorer() {
   const [tankDiameter, setTankDiameter] = useState<number>(DEFAULT_TANK_DIAMETER);
   const [tankHeight, setTankHeight] = useState<number>(DEFAULT_TANK_DIAMETER);
   const [overrideTank, setOverrideTank] = useState<boolean>(false);
+
+  function resetToDefaults() {
+    setFuel(DEFAULTS.fuel);
+    setVolume(DEFAULTS.volume);
+    setWindSpeed(DEFAULTS.windSpeed);
+    setWindFrom(DEFAULTS.windFrom);
+    setLat(DEFAULTS.lat);
+    setLon(DEFAULTS.lon);
+    setResolution(DEFAULTS.resolution);
+    setStrengthClass(DEFAULTS.strengthClass);
+    setCombEff(DEFAULTS.combEff);
+    setTransmissivity(DEFAULTS.transmissivity);
+    setTankDiameter(DEFAULTS.tankDiameter);
+    setTankHeight(DEFAULTS.tankHeight);
+    setOverrideTank(DEFAULTS.overrideTank);
+  }
 
   const [result, setResult] = useState<ZoneResponse | null>(null);
   const [computing, setComputing] = useState<boolean>(false);
@@ -447,8 +480,18 @@ export function ZoneExplorer() {
           </Card>
         )}
 
-        <Separator />
-
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+            Live results
+          </span>
+          <button
+            type="button"
+            onClick={resetToDefaults}
+            className="rounded-md border border-zinc-200 bg-white px-2 py-0.5 text-xs font-medium text-zinc-600 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900"
+          >
+            Reset
+          </button>
+        </div>
         <div className="grid grid-cols-3 gap-2">
           {bandDistances.map((b) => (
             <div
@@ -491,7 +534,8 @@ export function ZoneExplorer() {
         </div>
       </aside>
 
-      {/* Map */}
+      {/* Map — always rendered so users see the basemap immediately, with
+          zones overlaid once the API responds. */}
       <div className="relative h-full w-full">
         {result ? (
           <ZoneMap
@@ -501,9 +545,7 @@ export function ZoneExplorer() {
             strengthClass={result.strength_class}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-zinc-100 text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
-            Computing initial zones…
-          </div>
+          <MapPlaceholder lat={lat} lon={lon} />
         )}
       </div>
     </div>
@@ -550,6 +592,32 @@ function NumberInput({
         if (Number.isFinite(v)) onChange(v);
       }}
       className="h-9 w-full rounded-md border border-zinc-200 bg-white px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-800 dark:bg-zinc-950"
+    />
+  );
+}
+
+/** A static Leaflet map showing only the selected lat/lon (a single
+ *  marker) and the OSM basemap. Used as a placeholder while zone
+ *  data is loading or unavailable. */
+const PlaceholderMap = dynamic(
+  () => import("@/components/der02/zone-map").then((m) => m.ZoneMap),
+  { ssr: false },
+);
+function MapPlaceholder({ lat, lon }: { lat: number; lon: number }) {
+  // Build a synthetic ZoneResponse with no records, so ZoneMap renders
+  // the basemap + a tank marker but no zones. The bbox is the same
+  // ±0.02° box the API uses.
+  return (
+    <PlaceholderMap
+      records={[]}
+      bbox={{
+        min_lat: lat - DEFAULT_BBOX_HALF_EXTENT,
+        min_lon: lon - DEFAULT_BBOX_HALF_EXTENT,
+        max_lat: lat + DEFAULT_BBOX_HALF_EXTENT,
+        max_lon: lon + DEFAULT_BBOX_HALF_EXTENT,
+      }}
+      sourceLabel={`Source: ${lat.toFixed(3)}, ${lon.toFixed(3)}`}
+      strengthClass={0}
     />
   );
 }

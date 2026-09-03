@@ -20,6 +20,22 @@ import {
 } from "./geometry";
 import type { ZoneRecord } from "@/lib/types";
 
+/** Fix Leaflet's default marker icon paths to a CDN that ships the
+ *  four PNGs Leaflet expects. Without this, Webpack/Turbopack mangles
+ *  the image URLs and the browser shows a broken-image glyph. */
+const TANK_ICON = L.icon({
+  iconUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  iconRetinaUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  shadowUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
 export interface ZoneMapProps {
   records: ZoneRecord[];
   bbox: { min_lat: number; min_lon: number; max_lat: number; max_lon: number };
@@ -121,7 +137,7 @@ export function ZoneMap({ records, bbox, sourceLabel, strengthClass }: ZoneMapPr
         position="bottomright"
         prefix='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
-      <Marker position={bboxCenter(bbox)}>
+      <Marker position={bboxCenter(bbox)} icon={TANK_ICON}>
         <Popup>
           <b>{sourceLabel}</b>
           <br />
