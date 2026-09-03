@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# der02-web
 
-## Getting Started
+Next.js + TypeScript + Tailwind v4 frontend for [der02](https://github.com/j4yop/der02).
 
-First, run the development server:
+The FastAPI backend is hosted separately at <https://der02.vercel.app>; this app is a pure client of that API.
+
+## Stack
+
+- **Next.js 16** (App Router)
+- **React 19**
+- **TypeScript 5**
+- **Tailwind CSS v4** (CSS-based config, no `tailwind.config.js`)
+- **react-leaflet 5** + Leaflet 1 for the map
+- **lucide-react** for icons
+- Hand-rolled shadcn-style UI primitives in `src/components/ui/` (no shadcn CLI install)
+
+## Develop
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# open http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The app calls the FastAPI at `process.env.NEXT_PUBLIC_DER02_API_URL` (default: `https://der02.vercel.app`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+## Deploy (Vercel)
 
-To learn more about Next.js, take a look at the following resources:
+1. Create a new Vercel project pointing at this repo.
+2. Vercel auto-detects Next.js. No config needed.
+3. Add env var `NEXT_PUBLIC_DER02_API_URL` if you're hosting the FastAPI somewhere other than the public one.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Layout
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/
+├── app/
+│   ├── layout.tsx        # Top-level layout, metadata
+│   ├── page.tsx          # Mounts <ZoneExplorer />
+│   └── globals.css       # Tailwind import + minimal theme
+├── components/
+│   ├── ui/               # Button, Card, Slider, Select, Label, Separator
+│   └── der02/
+│       ├── zone-explorer.tsx  # Main page (controls + map)
+│       ├── zone-map.tsx       # Map + zone polygons
+│       └── geometry.ts        # Convex hull, severity colours
+└── lib/
+    ├── api.ts            # Typed client for the FastAPI
+    ├── cn.ts             # shadcn-style class merge
+    └── types.ts          # Mirrors the FastAPI Pydantic models
+```
 
-## Deploy on Vercel
+## License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Same as the parent der02 project: MIT.
