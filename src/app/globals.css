@@ -32,3 +32,10 @@ body {
 .leaflet-container {
   background: var(--background) !important;
 }
+/* OSM-tile loaders show a subtle blue-grey wash by default; in dark
+ * mode the tile background flips to a slightly bluish dark. Hide it
+ * entirely so the container background shows through while tiles
+ * load. */
+.leaflet-tile {
+  background: transparent !important;
+}
