@@ -117,11 +117,16 @@ function ZonePolygons({
       } else {
         const hull = convexHull(pts.map((p) => [p.lat, p.lon] as [number, number]));
         if (hull.length < 3) continue;
+        // No stroke (weight: 0) — the convex hull of a regular grid is
+        // an almost-rectangular shape whose outline reads as a "square"
+        // on the map, which is misleading. Fill alone communicates the
+        // zone extent.
         L.polygon(hull as L.LatLngExpression[], {
           color,
           fillColor: color,
           fillOpacity: SEVERITY_OPACITY,
-          weight: 2,
+          weight: 0,
+          opacity: 0,
         })
           .bindPopup(
             `<b>${sev[0]!.toUpperCase()}${sev.slice(1)}</b> band (${pts.length} grid nodes)`,
