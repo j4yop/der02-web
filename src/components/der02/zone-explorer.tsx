@@ -28,8 +28,8 @@ const ZoneMap = dynamic(
   },
 );
 
-const DEFAULT_LAT = 1.29;
-const DEFAULT_LON = 103.85;
+const DEFAULT_LAT = 12.8419815;
+const DEFAULT_LON = 80.1549340;
 const DEFAULT_BBOX_HALF_EXTENT = 0.02;
 const DEFAULT_RESOLUTION = 100;
 const DEFAULT_COMB_EFF = 0.4;
