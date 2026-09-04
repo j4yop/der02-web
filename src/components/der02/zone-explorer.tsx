@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { Flame, Wind, MapPin, Settings2, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { Flame, Wind, MapPin, Settings2, Loader2, BookOpen } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -219,10 +220,21 @@ export function ZoneExplorer() {
       {/* Sidebar */}
       <aside className="flex flex-col gap-4 overflow-y-auto border-r border-zinc-200 bg-zinc-50 p-4 text-sm dark:border-zinc-800 dark:bg-zinc-900">
         <header>
-          <h1 className="text-base font-semibold tracking-tight">der02</h1>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Threat-zone estimation · TNO Multi-Energy + solid-flame
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-base font-semibold tracking-tight">der02</h1>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                Threat-zone estimation · TNO Multi-Energy + solid-flame
+              </p>
+            </div>
+            <Link
+              href="/landing"
+              aria-label="About this tool"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900"
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+            </Link>
+          </div>
         </header>
 
         {loadError && (
