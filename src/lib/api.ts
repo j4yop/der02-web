@@ -11,6 +11,17 @@ import type {
 const API_BASE =
   process.env.NEXT_PUBLIC_DER02_API_URL ?? "https://der02.vercel.app";
 
+/** The FastAPI serialises the strength-class field as the JSON key
+ *  `class` (a Python keyword). Rename to `strengthClass` so the rest
+ *  of the frontend can use a normal TS identifier. */
+type RawStrengthClass = Omit<StrengthClass, "strengthClass"> & {
+  class: number;
+};
+function normalizeStrengthClass(r: RawStrengthClass): StrengthClass {
+  const { class: c, ...rest } = r;
+  return { strengthClass: c, ...rest };
+}
+
 class Der02ApiError extends Error {
   status: number;
   body: string;
@@ -56,8 +67,11 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 export const api = {
   base: API_BASE,
   listFuels: () => get<Fuel[]>("/api/fuels"),
+  listStrengthClasses: async () => {
+    const raw = await get<RawStrengthClass[]>("/api/strength-classes");
+    return raw.map(normalizeStrengthClass);
+  },
   getSeverityBands: () => get<SeverityBands>("/api/severity-bands"),
-  listStrengthClasses: () => get<StrengthClass[]>("/api/strength-classes"),
   computeZones: (req: ZoneRequest) =>
     post<ZoneResponse>("/api/zones", req),
   computeZonesMulti: (req: MultiTankRequest) =>

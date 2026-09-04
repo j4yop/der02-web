@@ -26,7 +26,10 @@ export interface SeverityBands {
 }
 
 export interface StrengthClass {
-  class_: number;
+  /** Strength class 1-10. The FastAPI serialises this as the JSON
+   *  key `class` (Python keyword). The TS field `strengthClass` maps
+   *  to it; read via `obj.strengthClass`. */
+  strengthClass: number;
   amplitude_factor: number;
   description: string;
 }

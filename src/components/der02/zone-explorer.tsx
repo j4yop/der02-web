@@ -353,7 +353,7 @@ export function ZoneExplorer() {
                 aria-label="TNO strength class"
               />
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                {classes?.find((c) => c.class_ === strengthClass)?.description ??
+                {classes?.find((c) => c.strengthClass === strengthClass)?.description ??
                   "Class 7: heavily congested module (default)"}
               </p>
             </Field>
